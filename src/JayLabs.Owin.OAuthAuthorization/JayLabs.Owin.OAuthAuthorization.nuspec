@@ -8,7 +8,7 @@
     <owners>$author$</owners>
     <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
     <projectUrl>https://github.com/jayway/JayLabs.Owin.OAuthAuthorization</projectUrl>
-    <iconUrl>https://avatars0.githubusercontent.com/u/89926</iconUrl>
+    <iconUrl>http://jayway.com/icons/jay_labs.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <copyright>Copyright 2014</copyright>

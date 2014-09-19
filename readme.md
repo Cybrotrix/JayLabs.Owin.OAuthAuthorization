@@ -1,7 +1,7 @@
 
 #Jaylib.Owin.OAuthAuthorization
 
-Provides an Custom OAuth Provider for Implicit Grant. Allowing usage of the included ClaimAuthorize attribute.
+Provides a Custom OAuth Provider for Implicit Grant. Allowing usage of the included ClaimAuthorize attribute.
 
 Authentication is made by other middleware like OpenIdConnect.
 
@@ -11,7 +11,7 @@ Authentication is made by other middleware like OpenIdConnect.
 
 ### Setup
 
-The Custom provider is use with the OAuthAutorizationServer.
+The Custom provider is used with the OAuthAutorizationServer.
 
 	app.UseOAuthAuthorizationServer(new OAuthAuthorizationServerOptions
     {
@@ -24,7 +24,7 @@ The Custom provider is use with the OAuthAutorizationServer.
         AllowInsecureHttp = _appConfiguration.AllowInsecureHttp
     });
 
-The provider option allow you issue custom claims and set scope.
+The provider options allow you issue custom claims and set scope.
 	
 	new CustomProviderOptions
 	               {

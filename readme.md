@@ -1,3 +1,78 @@
+
+#Jaylib.Owin.OAuthAuthorization
+
+Provides an Custom OAuth Provider for Implicit Grant. Allowing usage of the included ClaimAuthorize attribute.
+
+Authentication is made by other middleware like OpenIdConnect.
+
+##Usage
+
+    [ClaimAuthorize(CustomClaims.CanChangeAddress)]
+
+### Setup
+
+The Custom provider is use with the OAuthAutorizationServer.
+
+	app.UseOAuthAuthorizationServer(new OAuthAuthorizationServerOptions
+    {
+        AccessTokenFormat =
+            new JwtFormat(jwtOptions.Audience,
+            symmetricKeyIssuerSecurityTokenProvider),
+        ApplicationCanDisplayErrors = true,
+        Provider = new CustomOAuthProvider(providerOptions, jwtOptions), 
+        AuthorizeEndpointPath = new PathString("/authorize"),
+        AllowInsecureHttp = _appConfiguration.AllowInsecureHttp
+    });
+
+The provider option allow you issue custom claims and set scope.
+	
+	new CustomProviderOptions
+	               {
+	                   SupportedScope = "YourScope",
+	                   TransformPrincipal =
+	                       principal =>
+	                       {
+	                           var claims = new List<Claim>();
+	
+	                           List<Claim> userIdentityTokens =
+	                               principal.Claims
+	                                   .Where(claim =>
+	                                       claim.Type == ClaimTypes.Name || claim.Type == ClaimTypes.NameIdentifier ||
+	                                       claim.Type == JwtRegisteredClaimNames.UniqueName ||
+	                                       claim.Type == JwtRegisteredClaimNames.Email)
+	                                   .ToList();
+	
+	                           claims.AddRange(userIdentityTokens);
+	                           claims.Add(new Claim(CustomClaims.IsCustom, "true"));                  
+	
+	                           return Task.FromResult(new ClaimsIdentity(claims, "YourAuthType"));
+	                       }
+	               };
+	
+
+The is also utlilities to ease openId configuration, with consent page support.
+
+
+    var openIdConnectOptions = new OpenIdConnectAuthenticationOptions
+                               {
+                                   ClientId = _appConfiguration.OpenIdClientId,
+                                   Authority = _appConfiguration.OpenIdAuthority,
+                                   CallbackPath = new PathString("/openid"),
+                                   Notifications = new OpenIdConnectAuthenticationNotifications()
+                                                   {
+                                                       AuthorizationCodeReceived = async 
+                                                           authorizationCodeReceived => await
+                                                           new ExternalAuthenticationCompleteHandler(jwtOptions)
+                                                           .HandleAsync(authorizationCodeReceived, 																			ConsentBuilder.BuildConsentPageAsync)
+                                                   },
+                                   AuthenticationMode = AuthenticationMode.Active
+                               };
+
+    app.UseOpenIdConnectAuthentication(openIdConnectOptions);
+
+
+#Blog post:
+
 # Securing Web API end points using OAuth 2.0 and JSON Web Tokens
 
 In this post we're going to create some simple end points using ASP.NET Web Api using OWIN, that we going to secure using a custom claims attribute. We will issue a JSON Web Token, JWT, containing user claims, that the client will use when calling the API.

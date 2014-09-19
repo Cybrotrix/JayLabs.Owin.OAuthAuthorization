@@ -18,8 +18,6 @@ namespace JayLabs.Owin.OAuthAuthorization
 
         public Func<ClaimsPrincipal, Task<ClaimsIdentity>> TransformPrincipal
         {
-
-
             get { return _transformPrincipal ?? (principal => Task.FromResult(principal.Identities.FirstOrDefault())); }
             set { _transformPrincipal = value; }
         }

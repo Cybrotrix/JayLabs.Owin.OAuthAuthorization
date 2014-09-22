@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>$id$</id>
+    <id>JayLabs.Owin.OAuthAuthorization</id>
     <version>$version$</version>
-    <title>$title$</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+    <title>JayLabs.Owin.OAuthAuthorization</title>
+    <authors>Niklas Lundberg, Per Okvist</authors>
+    <owners>JayLabs</owners>
     <licenseUrl>http://opensource.org/licenses/MS-PL</licenseUrl>
     <projectUrl>https://github.com/jayway/JayLabs.Owin.OAuthAuthorization</projectUrl>
     <iconUrl>http://jayway.com/icons/jay_labs.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
+    <description>Authorization Server for OWIN</description>
     <copyright>Copyright 2014</copyright>
     <tags>OAuth, Authorization, OWIN</tags>
   </metadata>

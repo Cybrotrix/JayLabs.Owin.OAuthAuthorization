@@ -6,7 +6,6 @@ using Microsoft.Owin.Security.Jwt;
 
 namespace JayLabs.Owin.OAuthAuthorization.Extensions
 {
-
     public static class OptionsExtensions
     {
        public static IIssuerSecurityTokenProvider CreateKeyIssuerSecurityTokenProvider(this IJwtOptions options)

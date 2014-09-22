@@ -12,13 +12,11 @@ namespace JayLabs.Owin.OAuthAuthorization
 {
     public class CustomOAuthProvider : OAuthAuthorizationServerProvider
     {
-        readonly IJwtOptions _jwtOptions;
         readonly CustomProviderOptions _options;
 
-        public CustomOAuthProvider(CustomProviderOptions options, IJwtOptions jwtOptions)
+        public CustomOAuthProvider(CustomProviderOptions options)
         {
             _options = options;
-            _jwtOptions = jwtOptions;
         }
 
         public override Task ValidateClientRedirectUri(OAuthValidateClientRedirectUriContext context)
@@ -52,7 +50,7 @@ namespace JayLabs.Owin.OAuthAuthorization
 
             IFormCollection formCollection = await context.Request.ReadFormAsync();
 
-            string externalWrappedJwtTokenAsBase64 = formCollection.Get(_jwtOptions.JwtTokenHeader);
+            string externalWrappedJwtTokenAsBase64 = formCollection.Get(_options.JwtTokenHeader);
 
             if (string.IsNullOrWhiteSpace(externalWrappedJwtTokenAsBase64))
             {
@@ -70,7 +68,7 @@ namespace JayLabs.Owin.OAuthAuthorization
             }
 
             var tokenValidator = new TokenValidator();
-            ClaimsPrincipal principal = tokenValidator.Validate(externalWrappedJwtTokenAsBase64, _jwtOptions);
+            ClaimsPrincipal principal = tokenValidator.Validate(externalWrappedJwtTokenAsBase64, _options);
 
             if (!principal.Identity.IsAuthenticated)
             {
@@ -87,7 +85,7 @@ namespace JayLabs.Owin.OAuthAuthorization
             }
 
             string appJwtTokenAsBase64 =
-                JwtTokenHelper.CreateSecurityTokenDescriptor(claimsIdentity.Claims, _jwtOptions)
+                JwtTokenHelper.CreateSecurityTokenDescriptor(claimsIdentity.Claims, _options)
                     .CreateTokenAsBase64();
 
             var builder = new UriBuilder(context.AuthorizeRequest.RedirectUri);

@@ -6,5 +6,6 @@
         string Issuer { get; }
         string Audience { get; }
         string JwtTokenHeader { get; }
+        string SupportedScope { get; }
     }
 }

@@ -6,30 +6,42 @@ using JayLabs.Owin.OAuthAuthorization.Tokens;
 
 namespace JayLabs.Owin.OAuthAuthorization
 {
-    public class CustomProviderOptions : IJwtOptions
+    public class CustomProviderOptions
     {
+        readonly JwtOptions _jwtOptions;
+        readonly HandleConsentOptions _handleConsentOptions;
         Func<ClaimsPrincipal, Task<ClaimsIdentity>> _transformPrincipal;
 
-        public CustomProviderOptions(IJwtOptions jwtOptions)
+        public CustomProviderOptions(JwtOptions jwtOptions, HandleConsentOptions handleConsentOptions)
         {
-            JwtSigningKeyAsUtf8 = jwtOptions.JwtSigningKeyAsUtf8;
-            Issuer = jwtOptions.Issuer;
-            Audience = jwtOptions.Audience;
-            JwtTokenHeader = jwtOptions.JwtTokenHeader;
-            SupportedScope = jwtOptions.SupportedScope;
+            if (jwtOptions == null)
+            {
+                throw new ArgumentNullException("jwtOptions");
+            }
+
+            if (handleConsentOptions == null)
+            {
+                throw new ArgumentNullException("handleConsentOptions");
+            }
+
+            _jwtOptions = jwtOptions;
+            _handleConsentOptions = handleConsentOptions;
         }
-        
+
         public Func<ClaimsPrincipal, Task<ClaimsIdentity>> TransformPrincipal
         {
             get { return _transformPrincipal ?? (principal => Task.FromResult(principal.Identities.FirstOrDefault())); }
             set { _transformPrincipal = value; }
         }
 
-        public string JwtSigningKeyAsUtf8 { get; private set; }
-        public string Issuer { get; private set; }
-        public string Audience { get; private set; }
-        public string JwtTokenHeader { get; private set; }
-        public string SupportedScope { get; private set; }
+        public JwtOptions JwtOptions
+        {
+            get { return _jwtOptions; }
+        }
 
+        public HandleConsentOptions HandleConsentOptions
+        {
+            get { return _handleConsentOptions; }
+        }
     }
 }

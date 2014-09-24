@@ -4,13 +4,13 @@ In this post we're going to create some simple end points using ASP.NET Web Api 
 We're going to due this from sratch, not via any of the templates (SPA, Web Api).  
 
 ### Scenario
-We have a JavaScript web client that should be able to talk to our API. The API requires all requests to be authenticated.
+We have a JavaScript web client that should be able to talk to our API. The Api requires all requests to be authenticated.
 
 There are many options for securing our Api. 
 
-We could use a static API key distributed to every client. However, a static API key is not ideal for our use case, since it would be easy for anyone to get the API key in clear text from the client. Instead we have to get an API key per client user. 
+We could use a static Api key distributed to every client. However, a static Api key is not ideal for our use case, since it would be easy for anyone to get the API key in clear text from the client. Instead we have to get an API key per client user. 
 
-We could implement a custom API key solution, but why implement a custom one when there are standards like OAuth 2.0. OAuth 2.0 is an authorization framework that allows us to issue and consume tokens in standardized and interoperable way.
+We could implement a custom Api key solution, but why implement a custom one when there are standards like OAuth 2.0. OAuth 2.0 is an authorization framework that allows us to issue and consume tokens in standardized and interoperable way.
 
 In the templates for SPA or Web Api there are a lot of helper classes to get you up and running with ***authentication*** from a mix of providers. In our case we also have different levels of privileges for the resource endpoints. Thus we also have need for ***authorization***. This could be achived by using claims-based authorization.
 
@@ -30,11 +30,11 @@ A request looks like this:
 
 		GET https://myapiserver.com/authorize?response_type=token&client_id=myClientId&state=xyz&scope=MyAppScope&redirect_uri=https://myapiclient.com/clientCallbackPage.html
 
-When our server recevies the access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to our callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
+When our server recevie the access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to our callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
 
 		POST https://apiserver.com/openid
 
-When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our API. At the final stage of authentication, we issue a redirect to our consent page. If the user accepts the grant request, the user-agent makes a request to the original OAuth request URI with an additional JWT and a consent answer attached. The JWT is created by wrapping the original OpenID Connect JWT. Other ways of transferring the identity to ourselves for later use is to use cookies. This should be considered an implementation detail.
+When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our Api. At the final stage of authentication, we issue a redirect to our consent page. If the user accepts the grant request, the user-agent makes a request to the original OAuth request URI with an additional JWT and a consent answer attached. The JWT is created by wrapping the original OpenID Connect JWT. Other ways of transferring the identity to ourselves for later use is to use cookies. This should be considered an implementation detail.
 
         GET https://apiserver.com/consent/consent?redirectUri={0}&consentParamName=consentAnswer
         
@@ -48,7 +48,7 @@ When we have the identity of the user we show a user consent HTML page asking th
 
 Now we are back in the access token request and we know the identity of the user and we have a consent answer. Here we decide what claims are to be issued to the client based on the identity claims and some ruleset. 
 
-With a set of claims we create a signed JWT containing the identity of the user and additional claims to be used when authenticating API calls. 
+With a set of claims we create a signed JWT containing the identity of the user and additional claims to be used when authenticating Api calls. 
 
 Our server responds the client by sending a redirect response to the user agent based on the redirect_uri the client provided in the first place, now with an access token attached in the fragment part of the URI. 
 
@@ -385,7 +385,6 @@ Our scenario is catered for a javascript app, but also works with app using Auth
 
 Full source code @ [https://github.com/jayway/JayLabs.Owin.OAuthAuthorization](GitHub)
 The [nuget package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
-
 
 Enjoy!
 

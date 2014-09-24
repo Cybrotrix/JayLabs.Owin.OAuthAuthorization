@@ -58,8 +58,8 @@ Our server responds the client by sending a redirect response to the user agent 
 In this simple scenario we're using the implicit grant flow, to keep it simple. You may want a an authorization server with full support for all OAuth 2.0 flows, like server to server and the ability to renew tokens and validate them form the issuer.
 [See Implicit flow AKA the client flow](http://techblog.hybris.com/2012/06/05/oauth2-the-implicit-flow-aka-as-the-client-side-flow/) or the oAuth 2.0 specification [specification](http://tools.ietf.org/html/rfc6749#section-4.2).
 
-The full source code for the solution presented in this post could be found @ [https://github.com/jayway/JayLabs.Owin.OAuthAuthorization](GitHub)
-The soultion is also avalibe as a [nuget package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
+The full source code for the solution presented in this post could be found @ [GitHub](https://github.com/jayway/JayLabs.Owin.OAuthAuthorization).
+The solution is also avalibe as a [nuget package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
 
 Let's take a look at the main parts.
 

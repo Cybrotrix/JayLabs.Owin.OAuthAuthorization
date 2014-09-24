@@ -3,7 +3,7 @@
 
 Provides a Custom OAuth Provider for Implicit Grant. Allowing usage of the included ClaimAuthorize attribute.
 
-Authentication is made by other middleware like OpenIdConnect.
+Authentication is made by other middleware like OpenID Connect.
 
 ##Usage
 
@@ -19,54 +19,77 @@ The Custom provider is used with the OAuthAutorizationServer.
             new JwtFormat(jwtOptions.Audience,
             symmetricKeyIssuerSecurityTokenProvider),
         ApplicationCanDisplayErrors = true,
-        Provider = new CustomOAuthProvider(providerOptions, jwtOptions), 
+        Provider = new CustomOAuthProvider(providerOptions), 
         AuthorizeEndpointPath = new PathString("/authorize"),
         AllowInsecureHttp = _appConfiguration.AllowInsecureHttp
     });
 
 The provider options allow you issue custom claims and set scope.
 	
-	new CustomProviderOptions
-	               {
-	                   SupportedScope = "YourScope",
-	                   TransformPrincipal =
-	                       principal =>
-	                       {
-	                           var claims = new List<Claim>();
+    var handleConsentOptions = new HandleConsentOptions(consentParameterName:"consentAnswer");
+
+    var jwtOptions = new JwtOptions {
+        JwtSigningKeyAsUtf8 = "your key",
+        Issuer = "your issuer name",
+        Audience, "your oauth audience (uri)",
+        JwtTokenParameterName = "jwt_token",
+        SupportedScope = "Your scope"
+    }
+
+	new CustomProviderOptions(jwtOptions, handleConsentOptions)
+	        {
+	            TransformPrincipal =
+	                principal =>
+	                {
+	                    var claims = new List<Claim>();
 	
-	                           List<Claim> userIdentityTokens =
-	                               principal.Claims
-	                                   .Where(claim =>
-	                                       claim.Type == ClaimTypes.Name || claim.Type == ClaimTypes.NameIdentifier ||
-	                                       claim.Type == JwtRegisteredClaimNames.UniqueName ||
-	                                       claim.Type == JwtRegisteredClaimNames.Email)
-	                                   .ToList();
+	                    List<Claim> userIdentityTokens =
+	                        principal.Claims
+	                            .Where(claim =>
+	                                claim.Type == ClaimTypes.Name || claim.Type == ClaimTypes.NameIdentifier ||
+	                                claim.Type == JwtRegisteredClaimNames.UniqueName ||
+	                                claim.Type == JwtRegisteredClaimNames.Email)
+	                            .ToList();
 	
-	                           claims.AddRange(userIdentityTokens);
-	                           claims.Add(new Claim(CustomClaims.IsCustom, "true"));                  
+	                    claims.AddRange(userIdentityTokens);
+	                    claims.Add(new Claim(CustomClaims.IsCustom, "true"));                  
 	
-	                           return Task.FromResult(new ClaimsIdentity(claims, "YourAuthType"));
-	                       }
-	               };
+	                    return Task.FromResult(new ClaimsIdentity(claims, "YourAuthType"));
+	                }
+	        };
 	
 
-The is also utlilities to ease openId configuration, with consent page support.
+There is also utlilities to ease OpenID Connect configuration, with consent page support.
 
+By default, there is an implicit consent if no implementation is provided by setting CreateConsentAsync. In this case we redirect to a consent view that will POST the consent result back to the authorization URI.
+
+    var createConsentOptions = new CreateConsentOptions
+            {
+                CreateConsentAsync = (response, redirectUri) =>
+                {
+                    var consentUrl = new Uri(string.Format("/consent?redirectUri={0}&consentParamName={1}",
+                        Uri.EscapeDataString(redirectUri.ToString()), 
+                        Uri.EscapeDataString(customProviderOptions.HandleConsentOptions.ConsentParameterName)), UriKind.Relative);
+
+                    response.Redirect(consentUrl.ToString());
+
+                    return Task.FromResult(0);
+                }
+            };
+
+    var notifications = new OpenIdConnectAuthenticationNotifications
+            {
+                AuthorizationCodeReceived = consentBuilder.HandleOpenIdAuthorizationCodeAsync
+            };
 
     var openIdConnectOptions = new OpenIdConnectAuthenticationOptions
-                               {
-                                   ClientId = _appConfiguration.OpenIdClientId,
-                                   Authority = _appConfiguration.OpenIdAuthority,
-                                   CallbackPath = new PathString("/openid"),
-                                   Notifications = new OpenIdConnectAuthenticationNotifications()
-                                                   {
-                                                       AuthorizationCodeReceived = async 
-                                                           authorizationCodeReceived => await
-                                                           new ExternalAuthenticationCompleteHandler(jwtOptions)
-                                                           .HandleAsync(authorizationCodeReceived, 																			ConsentBuilder.BuildConsentPageAsync)
-                                                   },
-                                   AuthenticationMode = AuthenticationMode.Active
-                               };
+            {
+                ClientId = _appConfiguration.OpenIdClientId,
+                Authority = _appConfiguration.OpenIdAuthority,
+                CallbackPath = new PathString("/openid"),
+                Notifications = notifications,
+                AuthenticationMode = AuthenticationMode.Active
+            };
 
     app.UseOpenIdConnectAuthentication(openIdConnectOptions);
 
@@ -75,8 +98,8 @@ The is also utlilities to ease openId configuration, with consent page support.
 
 # Securing Web API end points using OAuth 2.0 and JSON Web Tokens
 
-In this post we're going to create some simple end points using ASP.NET Web Api using OWIN, that we going to secure using a custom claims attribute. We will issue a JSON Web Token, JWT, containing user claims, that the client will use when calling the API.
-We're going to due this from sratch, not via any of the templates (SPA, Web API).  
+In this post we're going to create some simple end points using ASP.NET Web Api with [OWIN](http://owin.org/), that we going to secure using a custom claims attribute. We will issue a [JSON Web Token](http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html), JWT, containing user claims, that the client will use when calling the API.
+We're going to due this from sratch, not via any of the templates (SPA, Web Api).  
 
 ### Scenario
 We have a JavaScript web client that should be able to talk to our API. The API requires all requests to be authenticated.
@@ -87,7 +110,7 @@ We could use a static API key distributed to every client. However, a static API
 
 We could implement a custom API key solution, but why implement a custom one when there are standards like OAuth 2.0. OAuth 2.0 is an authorization framework that allows us to issue and consume tokens in standardized and interoperable way.
 
-In the templates for SPA or Web API there are a lot of helper classes to get you up and running with ***authentication*** from a mix of providers. In our case we also have different levels of privileges for the resource endpoints. Thus we also have need for ***authorization***. This could be achived by using claims-based authorization.
+In the templates for SPA or Web Api there are a lot of helper classes to get you up and running with ***authentication*** from a mix of providers. In our case we also have different levels of privileges for the resource endpoints. Thus we also have need for ***authorization***. This could be achived by using claims-based authorization.
 
 - We want our resource endpoints to configured to authorize through claims.
 
@@ -95,7 +118,7 @@ The next question is how to decide what set of privilege a user has. And how doe
 
 - We want users to be able to authenticate with OpenID Connect providers like Google or Azure AD. 
 
-Since it is a JavaScript client application, OAuth 2.0 implicit flow is suitable.
+Since it is a JavaScript client application, [OAuth 2.0 implicit grant](http://tools.ietf.org/html/rfc6749#section-4.2) flow is suitable.
 
 #### The Scenario flow
 
@@ -103,19 +126,31 @@ The client makes an access token request, using OAuth 2.0 by navigating with the
 
 A request looks like this:
 
-		GET https://apiserver.com/authorize?grant_type=access_token&...
+		GET https://myapiserver.com/authorize?response_type=token&client_id=myClientId&state=xyz&scope=MyAppScope&redirect_uri=https://myapiclient.com/clientCallbackPage.html
 
-When our server recevies the request access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider and eventually the user agent will make request to our callback URI containing a signed JWT containing the identity claims for the user. 
+When our server recevies the request access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to our callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
 
-		GET https://apiserver.com/
+		POST https://apiserver.com/openid
 
-When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our API. If the user accepts the request, the user-agent is redirected to the original OAuth request with an additional JWT attached, which we have created by wrapping the original OpenID Connect JWT. Other ways of transferring the identity to ourselves for later use is to use cookies. This should be considered an implementation detail.
+When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our API. At the final stage of authentication, we issue a redirect to our consent page. If the user accepts the grant request, the user-agent makes a request to the original OAuth request URI with an additional JWT and a consent answer attached. The JWT is created by wrapping the original OpenID Connect JWT. Other ways of transferring the identity to ourselves for later use is to use cookies. This should be considered an implementation detail.
 
-Now we are back in the access token request and we know the identity of the user. Here we decide what claims are to be issued to the client based on the identity claims and some ruleset. 
+        GET https://apiserver.com/consent/consent?redirectUri={0}&consentParamName=consentAnswer
+        
+        where {0} is the original authorization URI (https://myapiserver.com/authorize?response_type=token&client_id=myClientId&state=xyz&scope=MyAppScope&redirect_uri=https://myapiclient.com/clientCallbackPage.html)
 
-With a set of claims we create a signed JWT containing the identity of the user and additional claims. 
+        POST https://myapiserver.com/authorize?response_type=token&client_id=myClientId&state=xyz&scope=MyAppScope&redirect_uri=https://myapiclient.com/clientCallbackPage.html
+
+        request body:
+
+        consentAnswer=accepted&jwt_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215aXNzdWVyLmNvbSIsImV4cCI6MTQxMTQ3MzQ3OCwiaWF0IjoxNDExNDczNDc4LCJqdGkiOiJpZDEyMzQ1NiIsInR5cCI6IkpXVCJ9.CLjy_BDRIcYyWOQWZ3nJXWAEGpGLNSzgB5qjkrtZKJA
+
+Now we are back in the access token request and we know the identity of the user and we have a consent answer. Here we decide what claims are to be issued to the client based on the identity claims and some ruleset. 
+
+With a set of claims we create a signed JWT containing the identity of the user and additional claims to be used when authenticating API calls. 
 
 Our server responds the client by sending a redirect response to the user agent based on the redirect_uri the client provided in the first place, now with an access token attached in the fragment part of the URI. 
+
+        GET https://myapiclient.com/clientCallbackPage.html#access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215aXNzdWVyLmNvbSIsImV4cCI6MTQxMTQ3MzQ3OCwiaWF0IjoxNDExNDczNDc4LCJqdGkiOiJpZDEyMzQ1NjciLCJ0eXAiOiJKV1QifQ.DkNPec7pVe2HfyeaJvJZ8M2rIDC89kvDgfY_xZQtFBw&state=xyz&token_type=jwt
 
 > *Note* implicit vs explicit
 In this simple scenario we're using the implicit grant flow, to keep it simple. You may want a an authorization server with full support for all OAuth 2.0 flows, like server to server and the ability to renew tokens and validate them form the issuer.

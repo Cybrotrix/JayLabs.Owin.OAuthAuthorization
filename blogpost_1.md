@@ -30,7 +30,7 @@ A request looks like this:
 
 		GET https://myapiserver.com/authorize?response_type=token&client_id=myClientId&state=xyz&scope=MyAppScope&redirect_uri=https://myapiclient.com/clientCallbackPage.html
 
-When our server recevies the request access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to our callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
+When our server recevies the access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to our callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
 
 		POST https://apiserver.com/openid
 
@@ -116,7 +116,7 @@ We're going to use a custom authorization provider.
         AllowInsecureHttp = _appConfiguration.AllowInsecureHttp
     });
 
-> Note that we're using two sets of custom options *JwtOptions* and *ProviderOptions*. We also set the AllowInsecureHttp for our *appConfiguration*
+> Note that we're using two sets of custom options - *JwtOptions* and *ProviderOptions*. We also set the AllowInsecureHttp form our *appConfiguration*
 > 
 #### CustomOAuthProvider
 
@@ -125,13 +125,12 @@ This is the main part of our custom authorization implementation.
 
 	    public class CustomOAuthProvider : OAuthAuthorizationServerProvider
 
-Our Custom provider inherits *OAuthAuthorizationServerProvider*. And takes our *provdier options*.
+Our Custom provider inherits from *OAuthAuthorizationServerProvider*. And takes our *provider options*.
 
 
         public CustomOAuthProvider(CustomProviderOptions options)
 
-It then overides two methods form the base *OAuthAuthorizationServerProvider* class.
-
+It then overides two methods form the base *OAuthAuthorizationServerProvider* class. *ValidateClientRedirectUri* and AuthorizeEndpoint*.
 
         public override Task ValidateClientRedirectUri(OAuthValidateClientRedirectUriContext context)
         {

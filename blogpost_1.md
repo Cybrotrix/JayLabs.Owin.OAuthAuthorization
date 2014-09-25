@@ -1,14 +1,17 @@
 # Securing ASP.NET Web API endpoints - Using OWIN, OAuth 2.0 and Claims
 
 In this post we're going to create some simple endpoints using ASP.NET Web API, [OWIN](http://owin.org/) and OAuth 2.0. To secure Controller endpoints we are using a custom claims attribute. We will issue a [JSON Web Token](http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html), JWT, containing claims, that the client will use when calling the API.
-We're going to do this from scratch, not via any of the templates (SPA, Web API).  
+
+OAuth 2.0 specifies four roles, Resource Owner, Client, Resource Server and Authorization Server. In our solution we combine the two latter roles in one single server. Other solutions separate these roles allowing the same Authorization Server to be used by multiple applications. 
+
+We're going to implement OAuth 2.0 without using any of the default templates (SPA, Web API).
 
 ### Scenario
 We have a JavaScript web client that should be able to talk to our API. The API requires all requests to be authorized.
 
 There are many options for securing our API. 
 
-We could use a static Api key distributed to every client. However, a static API key is not ideal for our use case, since it would be easy for anyone to get hold of the API key in clear text from the client. Instead we have to get an API key per client user. 
+We could use a static API key distributed to every client. However, a static API key is not ideal for our use case, since it would be easy for anyone to get hold of the API key in clear text from the client. Instead we have to get an API key per client user. 
 
 We could implement a custom API key solution, but why implement a custom one when there are standards like OAuth 2.0. OAuth 2.0 is an authorization framework that allows us to issue and consume tokens in standardized and interoperable manner.
 
@@ -34,13 +37,19 @@ A request looks like this:
 
 #### The authentication flow
 
-When our server recevie the access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to the Api servers OpenID Connect callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
+When our server receive the access token request we first have to ensure the user to be authenticated via an identity provider. Here we start an authentication flow with OpenID Connect which redirects the user agent to the identity provider. Eventually the user agent will make a request to the API servers OpenID Connect callback URI, https://myapiserver.com/openid, containing a signed JWT with the identity claims for the user. 
 
 	POST https://myapiserver.com/openid
 
-After retrieving the OpenID Connect JWT, another JWT is created by our implementation by wrapping the original OpenID Connect JWT. This makes it possible to verify that we are the issuer of the wrapped token. Other ways of transferring the identity to ourselves for later could be using cookies. This should be considered an implementation detail.
+> This ends the authentication flow. However we have to get back to the authorization flow with the provided identity.
 
-When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our API. At the final stage of authentication, we issue a redirect to our consent page. If the user accepts the grant request, the user-agent makes a request to the original OAuth request URI with an additional JWT and a consent answer attached. 
+#### Contiunation of authorization flow
+
+After retrieving the OpenID Connect JWT, another JWT is created by our implementation by wrapping the original OpenID Connect JWT. This makes it possible to verify that we are the issuer of the wrapped token. Other ways of transferring the identity to ourselves for later use could be using cookies. This should be considered an implementation detail.
+
+When we have the identity of the user we show a user consent HTML page asking the user to confirm authorization for the client to use our API. 
+
+At the final stage of authentication, we issue a redirect to our consent page. If the user accepts the grant request, the user-agent makes a request to the original OAuth request URI with an additional JWT and a consent answer attached. 
 
 	GET https://myapiserver.com/consent/consent?redirectUri={0}&consentParamName=consentAnswer
         
@@ -56,7 +65,7 @@ POST request body:
 
 	consentAnswer=accepted&jwt_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215aXNzdWVyLmNvbSIsImV4cCI6MTQxMTQ3MzQ3OCwiaWF0IjoxNDExNDczN	Dc4LCJqdGkiOiJpZDEyMzQ1NiIsInR5cCI6IkpXVCJ9.CLjy_BDRIcYyWOQWZ3nJXWAEGpGLNSzgB5qjkrtZKJA
 
-Now we are back in the access token request and we know the identity of the user and we have a consent answer. Here we decide what claims are to be issued to the client based on the identity claims and some ruleset. 
+Now we are back in the access token request and we know the identity of the user and we have a consent answer. Here we decide what claims are to be issued to the client based on the identity claims and a ruleset. 
 
 With a set of claims we create a signed JWT containing the identity of the user and additional claims to be used when authorizing API calls. 
 
@@ -65,36 +74,35 @@ Our server responds the client by sending a redirect response to the user agent 
 	GET https://myapiclient.com/clientCallbackPage.html#access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL215aXNzdWVyLmNvbSIsImV4cCI6MTQxMTQ3MzQ3OCwiaWF0IjoxNDExNDczNDc4LCJqdGkiOiJpZDEyMzQ1NjciLCJ0eXAiOiJKV1QifQ.DkNPec7pVe2HfyeaJvJZ8M2rIDC89kvDgfY_xZQtFBw&state=xyz&token_type=jwt&scope=MyAppScope
 
 > *Note* implicit vs explicit
-In this simple scenario we're using the implicit grant flow, to keep it simple. You may want a an authorization server with full support for all OAuth 2.0 flows, like server to server and the ability to renew tokens and validate them form the issuer.
+In this scenario we're using the implicit grant flow, to keep it simple. You may want a an authorization server with full support for all OAuth 2.0 flows, like server to server and the ability to renew tokens and validate them from the issuer.
 [See Implicit flow AKA the client flow](http://techblog.hybris.com/2012/06/05/oauth2-the-implicit-flow-aka-as-the-client-side-flow/) or the OAuth 2.0 specification [specification](http://tools.ietf.org/html/rfc6749#section-4.2).
 
 The full source code for the solution presented in this post could be found @ [GitHub](https://github.com/jayway/JayLabs.Owin.OAuthAuthorization).
-The solution is also avalibe as a [nuget package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
+The solution is also avaliable as a [NuGet package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
 
-Let's take a look at the main parts.
+Let's take a look at the main parts of the implementation.
 
 ### Claims authorization
 
-We're going to create an attribute for authorization. In this post we're not going to use an Authorization Server or the "correct" OAuth2 flow for Authorization.
-The claims used will be issued by our application upon authorization.
+We're going to create an attribute for authorization to be used in our Web API controllers. 
 
     [ClaimAuthorize(CustomClaims.CanChangeAddress)]
 
 ### OWIN startup
 
-To support this scenario we're going to utilize serveral middleware components. Let's list them in order we need to configure them in our startup class, and their corresponding nuget packages.
+To support this scenario we're going to utilize several middleware components. Let's list them and their corresponding NuGet packages.
 
 - CORS (Microsoft.Owin.Cors)
 
 	`app.UseCors(...)`
 
-The resource endpoint needs to be configured for Cors.
+The resource endpoint needs to be configured for CORS.
 
 - OAuthAuthorizationServer (Microsoft.Owin.Security.OAuth)
 	
 	`app.UseOAuthAuthorizationServer(...)`
 
-Used to setup our custom authz server provider. Details in next section.
+Used to setup our custom authorization server provider. Details in next section.
 
 - JWT Bearer Authentication (Microsoft.Owin.Security.Jwt)
 
@@ -106,11 +114,11 @@ Used for accepting bearer token and setting the IClaimsPrincipal according to th
 
     `app.UseOpenIdConnectAuthentication(openIdConnectAuthenticationOptions);`
 
-Used to configure or authentication provider, ex Azure AD or Google.
+Used to configure our authentication provider, ex Azure AD or Google.
 
 The core parts for our implementation is around OpenIdConnect and the OAuthAuthorizationServer. Let's focus on them next.
 
-### OWIN OAuthAuthorizationServer Middleware
+### OWIN OAuthAuthorizationServer middleware
 
 To use OAuth for authorization we can utilize the *UseOAuthAuthorizationServer* provided by the OAuth middleware.
 We're going to use a custom authorization provider.
@@ -122,20 +130,19 @@ We're going to use a custom authorization provider.
             symmetricKeyIssuerSecurityTokenProvider),
         ApplicationCanDisplayErrors = true,
         Provider = new CustomOAuthProvider(providerOptions), 
-        AuthorizeEndpointPath = new PathString("/authorize"),
-        AllowInsecureHttp = _appConfiguration.AllowInsecureHttp
+        AuthorizeEndpointPath = new PathString("/authorize")
     });
 
-> Note that we're using two sets of custom options - *JwtOptions* and *ProviderOptions*. We also set the AllowInsecureHttp form our *appConfiguration*
-> 
+> Note that we're using two sets of custom options - *jwtOptions* and *providerOptions*. 
+ 
 #### CustomOAuthProvider
 
-The provider is responsible for validating authentication, authorization and redirects in the authorization flow.
+The provider is responsible for issuing access tokens.
 This is the main part of our custom authorization implementation.
 
 	    public class CustomOAuthProvider : OAuthAuthorizationServerProvider
 
-Our Custom provider inherits from *OAuthAuthorizationServerProvider*. And takes our *provider options*.
+Our custom provider inherits from *OAuthAuthorizationServerProvider*. And takes our *CustomProviderOptions*.
 
 
         public CustomOAuthProvider(CustomProviderOptions options)
@@ -250,20 +257,20 @@ It then overides two methods form the base *OAuthAuthorizationServerProvider* cl
 
 The *AuthorizeEndpoint* method is central here. The flow described in the scenario section is implemented here.
 We're checking the scope, if not valid we return an OAuth error in the fragment part and complete the request.
-Then we check for an external token (if the user is authenticated), if not we used the challenge method in the middleware. If the user is authenticated we transform (add our custom claims) and sign the token.
+Then we check for an external token (if the user is authenticated), if not, we use the challenge method in the authentication middleware. If the user is authenticated we transform (add our custom claims) and sign the token.
 
-Let's take a look on the options (*JwtOptions* and *ProviderOptions*) the provider needs.
+Let's take a look on the options (*JwtOptions* and *CustomProviderOptions*) the provider needs.
 
 ##### Options
 
-The provider options allow you to issue custom claims and set scope.
+The provider options allow you to transform claims.
 	
     var handleConsentOptions = new HandleConsentOptions(consentParameterName:"consentAnswer");
 
     var jwtOptions = new JwtOptions {
         JwtSigningKeyAsUtf8 = "your key",
         Issuer = "your issuer name",
-        Audience, "your oauth audience (uri)",
+        Audience, "your oauth audience",
         JwtTokenParameterName = "jwt_token",
         SupportedScope = "Your scope"
     }
@@ -289,14 +296,14 @@ The provider options allow you to issue custom claims and set scope.
 	                    return Task.FromResult(new ClaimsIdentity(claims, "YourAuthType"));
 	                }
 	        };
-The provider aids you with the setup of authorization, letting you issue own claims, in a JWT token based on the JWTOptions.
+The provider aids you with the setup of authorization, letting you issue own claims, in a JWT token based on the JwtOptions.
 
 To get a user authenticated, we configure the OpenID Connect middleware - up next.
 
 ### OpenID Connect OWIN middleware
 
 Since we're using OWIN, we could use the OpenID Connect middleware package.
-The middleware is configured in the OWIN startup class. Ex with Azure AD;
+The middleware is configured in the OWIN startup class. Eg. with Azure AD;
 
         var openIdConnectOptions = new OpenIdConnectAuthenticationOptions
                 {
@@ -313,7 +320,7 @@ The middleware is configured in the OWIN startup class. Ex with Azure AD;
 
 #### CreateConsentOptions
 
-This is a utlilitiy to ease OpenID Connect configuration, with consent page support.
+This is a utlility to hook-up when authentication is done, with consent page support.
 
         var createConsentOptions = new CreateConsentOptions
                 {
@@ -337,73 +344,21 @@ This is a utlilitiy to ease OpenID Connect configuration, with consent page supp
                 }
 
 
-By default, there is an implicit consent if no implementation is provided by setting CreateConsentAsync. In this case we redirect to a consent view that will POST the consent result back to the authorization URI.
+By default, there is an implicit consent if no implementation is provided by setting CreateConsentAsync. In this case we redirect to a consent view that will allow the user to POST the consent result back to the authorization URI.
 
 > The *notifications* is the used in the OpenIdConnectAuthorizationOptions, shown in the OpenIdConnect middleware section(above)
 
-### ClaimAuthorizeAttribute
-
-To authorize against claims we use a custom attribute. We then could use this much like the Authorization attribute, but against our claims.
-
-    [ClaimAuthorize(CustomClaims.CanChangeAddress)]
-
-The custom attribute inherites from AuthorizaAttribute.
-
- 	public class ClaimAuthorizeAttribute : AuthorizeAttribute
-    {
-        readonly List<string> _claimTypes =new List<string>();  
-        public ClaimAuthorizeAttribute(string requiredClaimType, params string[] requiredClaimTypes)
-        {
-            _claimTypes.Add(requiredClaimType);
-            if (requiredClaimTypes != null)
-            {
-                _claimTypes.AddRange(requiredClaimTypes);
-            }
-        }
-
-        protected override bool IsAuthorized(HttpActionContext actionContext)
-        {
-            ClaimsPrincipal claimsPrincipal = actionContext.Request.GetOwinContext().Authentication.User;
-
-            if (claimsPrincipal == null || !claimsPrincipal.Identity.IsAuthenticated)
-            {
-                return false;
-            }
-
-            var hasAllClaims =
-                _claimTypes.All(
-                    type =>
-                        claimsPrincipal.HasClaim(
-                            claim => claim.Type.Equals(type, StringComparison.InvariantCultureIgnoreCase)));
-
-            return hasAllClaims;
-        }
-    }
-
-We get the current principal from the OwinContext.
-Here we check if the uses is authenticated, and then is the ClaimsPrinciapal has to requied claim.
-
 ### Resource endpoints
 
-All resource endpoint should be secured by checking claims via our custom attribute. If the client doesn't have a valid token, is should respond with a 401, to tell the client to get a token. All resource endpoints could also be configured for CORS.
+All resource endpoints should be secured by checking claims via our custom attribute. If the client doesn't have a valid token, the API responds with a 401, to tell the client to get a token. All resource endpoints could also be configured for CORS.
 
 ### Conclusion
 
-In this post we explored what needs to be done for moving form the pure authentication scenarios often seen in the templates, towards authorization via OAuth 2.0. We implemented the OAuth 2.0 Implicit Grant flow, by using the OAuth 2.0 middleware writing our own OAuthProvider and ClaimsAuthorize attribute. It might seem as much custom code, but it's few core parts, that might be reused. Our server is also one step closer to a future scenario with federated authorization trough an exteranal authorization server.
+In this post we explored what needs to be done for moving from the pure authentication scenarios often seen in the templates, towards authorization via OAuth 2.0. We implemented the OAuth 2.0 Implicit Grant flow, by using the OAuth 2.0 middleware writing our own OAuthProvider and ClaimsAuthorize attribute. It might seem as if there is a lot of custom code, but there are few core parts, that might be reused. Our server is also one step closer to a future scenario with federated authorization through an exteranal authorization server.
 
-Our scenario is catered for a JavaScript app, but also works with app using WebAuthenticationBroker and alike. But we have not implemeted the flow ([Authorization Code Grant](http://tools.ietf.org/html/rfc6749#section-4.1)) for server to server scenarios. This would be next step to explore...
+Our scenario is catered for a JavaScript app, but also works with apps using WebAuthenticationBroker and alike. But we have not implemented the flow ([Authorization Code Grant](http://tools.ietf.org/html/rfc6749#section-4.1)) for server to server scenarios. This would be the next step to explore...
 
 Full source code @ [https://github.com/jayway/JayLabs.Owin.OAuthAuthorization](GitHub)
-The [nuget package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
+The [NuGet package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
 
 Enjoy!
-
-### Resources
-
-- [http://pfelix.wordpress.com/2012/11/27/json-web-tokens-and-the-new-jwtsecuritytokenhandler-class/](http://pfelix.wordpress.com/2012/11/27/json-web-tokens-and-the-new-jwtsecuritytokenhandler-class/)
-- [http://engineering.talis.com/articles/elegant-api-auth-angular-js/](http://engineering.talis.com/articles/elegant-api-auth-angular-js/)
-- [http://blogs.msdn.com/b/webdev/archive/2013/09/20/understanding-security-features-in-spa-template.aspx](http://blogs.msdn.com/b/webdev/archive/2013/09/20/understanding-security-features-in-spa-template.aspx)
-- [https://auth0.com/blog/2014/01/27/ten-things-you-should-know-about-tokens-and-cookies/](https://auth0.com/blog/2014/01/27/ten-things-you-should-know-about-tokens-and-cookies/)
-- [http://leastprivilege.com/2014/03/24/the-web-api-v2-oauth2-authorization-server-middlewareis-it-worth-it/](http://leastprivilege.com/2014/03/24/the-web-api-v2-oauth2-authorization-server-middlewareis-it-worth-it/)
-
-

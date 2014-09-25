@@ -11,7 +11,7 @@ namespace JayLabs.Owin.OAuthAuthorization.Tokens
         const string HmacSha256 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256";
         const string Sha256 = "http://www.w3.org/2001/04/xmlenc#sha256";
 
-        public static SecurityTokenDescriptor CreateSecurityTokenDescriptor(IEnumerable<Claim> claims, IJwtOptions options)
+        public static SecurityTokenDescriptor CreateSecurityTokenDescriptor(IEnumerable<Claim> claims, JwtOptions options)
         {
             string keyAsUtf8 =  options.JwtSigningKeyAsUtf8;
 

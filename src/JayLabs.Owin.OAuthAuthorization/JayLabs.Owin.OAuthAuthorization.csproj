@@ -39,6 +39,9 @@
     <Reference Include="Microsoft.Owin.Security">
       <HintPath>..\packages\Microsoft.Owin.Security.3.0.0\lib\net45\Microsoft.Owin.Security.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Owin.Security.Jwt">
+      <HintPath>..\packages\Microsoft.Owin.Security.Jwt.3.0.0\lib\net45\Microsoft.Owin.Security.Jwt.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Owin.Security.OAuth">
       <HintPath>..\packages\Microsoft.Owin.Security.OAuth.3.0.0\lib\net45\Microsoft.Owin.Security.OAuth.dll</HintPath>
     </Reference>
@@ -79,14 +82,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClaimAuthorizeAttribute.cs" />
+    <Compile Include="ConsentAnswer.cs" />
     <Compile Include="ConsentBuilder.cs" />
+    <Compile Include="CreateConsentOptions.cs" />
     <Compile Include="CustomOAuthProvider.cs" />
     <Compile Include="CustomProviderOptions.cs" />
+    <Compile Include="HandleConsentOptions.cs" />
     <Compile Include="OAuthImplicitFlowError.cs" />
     <Compile Include="OAuthRequest.cs" />
-    <Compile Include="OpenId\ExternalAuthenticationCompleteHandler.cs" />
+    <Compile Include="OpenId\Authorization.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tokens\IJwtOptions.cs" />
+    <Compile Include="RequestExtensions.cs" />
+    <Compile Include="Tokens\JwtBearerTokenAuthenticationExtensions.cs" />
+    <Compile Include="Tokens\JwtBearerTokenAuthenticationOptions.cs" />
+    <Compile Include="Tokens\JwtBearerTokenProvider.cs" />
+    <Compile Include="Tokens\JwtOptions.cs" />
     <Compile Include="Tokens\JwtRegisteredClaimNames.cs" />
     <Compile Include="Tokens\JwtTokenHelper.cs" />
     <Compile Include="Tokens\TokenValidator.cs" />
@@ -96,7 +106,9 @@
     <None Include="JayLabs.Owin.OAuthAuthorization.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

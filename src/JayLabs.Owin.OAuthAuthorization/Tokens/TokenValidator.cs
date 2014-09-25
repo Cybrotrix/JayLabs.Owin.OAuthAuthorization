@@ -9,7 +9,7 @@ namespace JayLabs.Owin.OAuthAuthorization.Tokens
 {
     public class TokenValidator
     {
-        public ClaimsPrincipal Validate(string jwtTokenAsBase64, IJwtOptions options)
+        public ClaimsPrincipal Validate(string jwtTokenAsBase64, JwtOptions options)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 

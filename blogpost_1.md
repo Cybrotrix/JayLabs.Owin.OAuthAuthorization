@@ -2,7 +2,7 @@
 
 In this post we're going to create some simple endpoints using ASP.NET Web API, [OWIN](http://owin.org/) and OAuth 2.0. To secure Controller endpoints we are using a custom claims attribute. We will issue a [JSON Web Token](http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html), JWT, containing claims, that the client will use when calling the API.
 
-OAuth 2.0 specifies four roles, Resource Owner, Client, Resource Server and Authorization Server. In our solution we combine the two latter roles in one single server. Other solutions separate these roles allowing the same Authorization Server to be used by multiple applications. 
+OAuth 2.0 specifies four roles, Resource Owner, Client, Resource Server and Authorization Server. In our solution we combine the two latter roles in one single server. Other solutions separate these roles allowing the same Authorization Server to be used by multiple applications.
 
 We're going to implement OAuth 2.0 without using any of the default templates (SPA, Web API).
 
@@ -360,5 +360,7 @@ Our scenario is catered for a JavaScript app, but also works with apps using Web
 
 Full source code @ [https://github.com/jayway/JayLabs.Owin.OAuthAuthorization](GitHub)
 The [NuGet package](http://www.nuget.org/packages/JayLabs.Owin.OAuthAuthorization/).
+
+Also check out Dominick Baier's [blog](http://leastprivilege.com/) and the projects IdentityServer and AuthorizationServer by [Thinktecture](http://thinktecture.github.io/).
 
 Enjoy!
